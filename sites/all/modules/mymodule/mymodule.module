@@ -1,0 +1,59 @@
+<?php
+/**
+ * Implements hook_menu().
+ */
+ 
+function mymodule_menu() {
+  $items = array();
+
+  // Define a custom path to fetch the node data as JSON.
+  $items['getdata/%'] = array(
+    'title' => 'Get Node Data',
+    'page callback' => 'mymodule_get_node_data',
+    'page arguments' => array(1),  // Argument from the URL (node ID).
+    'access callback' => TRUE,  // Always allow access to this page.
+    'type' => MENU_CALLBACK,
+  );
+  
+
+  return $items;
+}
+
+
+function mymodule_form_node_form_alter(&$form, &$form_state, $form_id) {
+    // Check if the node type is the one you're working with.
+    if ($form['#node']->type == 'upsi_master') {
+        // Attach custom JavaScript to the form.
+        drupal_add_js(drupal_get_path('module', 'mymodule') . '/js/mymodule.js');
+    }
+}
+
+ 
+function mymodule_get_node_data($node_id) {
+     
+    // Load the node by ID.
+	watchdog('mymodule', 'Node ID passed: @nid', array('@nid' => $node_id), WATCHDOG_INFO);
+
+	 $node = node_load($node_id);
+    if ($node) {
+        // Prepare the data to return. You can customize this with the fields you need.
+        $node_data = array(
+            'nid' => $node->nid,
+            'title' => $node->title,
+            'type' => $node->type,
+			'name' => $node->field_name_of_the_person['und']['0']['value'],
+			'pan' => $node->field_pan_details['und']['0']['value'],
+			'thoroughfare' => $node->field_address['und']['0']['thoroughfare'],
+			'premise' => $node->field_address['und']['0']['premise'],
+			'locality' => $node->field_address['und']['0']['locality'],
+			'postal_code'=>  $node->field_address['und']['0']['postal_code'],
+			'country'=>  $node->field_address['und']['0']['country'],
+        );
+
+        // Return the data as JSON.
+        drupal_json_output($node_data);
+    } else {
+        // If the node is not found, return an error message.
+        drupal_json_output(array('error' => 'Node not found.'));
+    }
+}
